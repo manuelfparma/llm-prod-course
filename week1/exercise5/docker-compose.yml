@@ -1,0 +1,9 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    network_mode: "host"
+    env_file:
+      - .env
+    restart: unless-stopped

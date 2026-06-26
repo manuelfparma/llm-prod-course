@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EASY-CHATGPT</title>
+    <meta name="description" content="A simple chatbot interface powered by an OpenAI-compatible LLM via FastAPI proxy.">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/style.css">
+
+    <!-- marked.js — lightweight Markdown-to-HTML (library, not a framework) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
+
+    <!-- highlight.js — syntax highlighting for code blocks -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/github-dark.min.css">
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
+
+    <!-- App logic -->
+    <script src="/static/app.js" defer></script>
+</head>
+<body>
+    <div class="app">
+
+        <!-- ============================================================ -->
+        <!-- CHAT PANEL (left / main area)                                -->
+        <!-- ============================================================ -->
+        <main class="chat-panel">
+            <header class="chat-header">
+                <h1>EASY-CHATGPT</h1>
+                <span class="chat-header-subtitle">LLM Chat Proxy</span>
+            </header>
+
+            <!-- Scrollable message container -->
+            <div class="chat-messages" id="chat-messages">
+                <div class="welcome-message" id="welcome-message">
+                    <div class="welcome-icon">💬</div>
+                    <p>Start a conversation — type a message below.</p>
+                </div>
+            </div>
+
+            <!-- Input area -->
+            <form class="chat-input-area" id="chat-form">
+                <textarea
+                    id="chat-input"
+                    placeholder="Type your message…"
+                    rows="1"
+                    autocomplete="off"
+                ></textarea>
+                <button type="submit" id="send-btn" title="Send message">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </form>
+        </main>
+
+        <!-- ============================================================ -->
+        <!-- CONTEXT VIEW PANEL (right sidebar)                           -->
+        <!-- ============================================================ -->
+        <aside class="context-panel" id="context-panel">
+            <header class="context-header">
+                <h2>Context View</h2>
+                <button class="reset-btn" id="reset-btn" title="Reset conversation">
+                    Reset
+                </button>
+            </header>
+
+            <!-- Token usage summary -->
+            <div class="token-usage" id="token-usage">
+                <div class="token-usage-title">Token Usage</div>
+                <div class="token-usage-grid">
+                    <div class="token-stat">
+                        <span class="token-label">Prompt</span>
+                        <span class="token-value" id="prompt-tokens">0</span>
+                    </div>
+                    <div class="token-stat">
+                        <span class="token-label">Completion</span>
+                        <span class="token-value" id="completion-tokens">0</span>
+                    </div>
+                    <div class="token-stat">
+                        <span class="token-label">Total</span>
+                        <span class="token-value" id="total-tokens">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages context (raw conversation) -->
+            <div class="context-messages-section">
+                <div class="context-messages-title">Messages Sent to Model</div>
+                <div class="context-messages" id="context-messages">
+                    <span class="context-empty">No messages yet.</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Toggle button for the context panel (visible on narrow screens) -->
+        <button class="context-toggle" id="context-toggle" title="Toggle context panel">
+            ☰
+        </button>
+
+    </div>
+</body>
+</html>
