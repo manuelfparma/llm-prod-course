@@ -121,21 +121,17 @@ chatForm.addEventListener('submit', async function (e) {
     const text = chatInput.value.trim();
     if (!text) return;
 
-    // Show user message immediately
     addMessage('user', text);
-
-    // Clear input and auto-resize
     chatInput.value = '';
     chatInput.style.height = 'auto';
 
-    // Show loading indicator in assistant bubble
     const loadingEl = addMessage('assistant', '<span class="loading-dots">Thinking</span>', true);
 
     isSending = true;
     sendBtn.disabled = true;
 
     try {
-        const res = await fetch('/api/chat', {
+        const res = await fetch('/api/chat/stream', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message: text }),
@@ -143,26 +139,53 @@ chatForm.addEventListener('submit', async function (e) {
 
         if (!res.ok) {
             const err = await res.json().catch(() => ({ detail: res.statusText }));
-            const errorText = err.detail || `Error ${res.status}`;
-            // Replace loading with error
             loadingEl.closest('.message').remove();
-            addMessage('error', errorText);
-        } else {
-            const data = await res.json();
-
-            // Render assistant reply as Markdown
-            loadingEl.innerHTML = marked.parse(data.reply || '');
-
-            // Highlight code blocks that marked.js produced
-            loadingEl.querySelectorAll('pre code').forEach(function (block) {
-                hljs.highlightElement(block);
-            });
-
-            // Update token usage
-            updateTokenDisplay(data.usage);
+            addMessage('error', err.detail || `Error ${res.status}`);
+            return;
         }
 
-        // Refresh context view
+        loadingEl.innerHTML = ''; // clear "Thinking..." dots
+        let accumulatedText = '';
+        
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // Keep the last incomplete line in the buffer
+
+            for (let line of lines) {
+                line = line.replace(/\r/g, ''); // Strip carriage returns
+                if (line.startsWith('data: ')) {
+                    const dataStr = line.substring(6).trim();
+                    if (!dataStr) continue;
+                    
+                    try {
+                        const parsed = JSON.parse(dataStr);
+                        if (parsed.token !== undefined) {
+                            accumulatedText += parsed.token;
+                            loadingEl.innerHTML = marked.parse(accumulatedText);
+                            scrollToBottom();
+                        } else if (parsed.usage) {
+                            updateTokenDisplay(parsed.usage);
+                        }
+                    } catch (err) {
+                        // Ignore invalid JSON (e.g. [DONE] signals if the server sends them)
+                    }
+                }
+            }
+        }
+
+        // Highlight code blocks once the stream finishes
+        loadingEl.querySelectorAll('pre code').forEach(function (block) {
+            hljs.highlightElement(block);
+        });
+
         await refreshContext();
 
     } catch (err) {

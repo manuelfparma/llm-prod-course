@@ -17,6 +17,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from openai import OpenAI, OpenAIError
 from pydantic import BaseModel, Field
+from sse_starlette.sse import EventSourceResponse
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -156,6 +157,58 @@ async def chat(request: ChatRequest):
             total_tokens=token_usage["total_tokens"],
         ),
     )
+
+
+@app.post("/api/chat/stream")
+async def chat_stream(request: ChatRequest):
+    """
+    Receive a user message, forward the full conversation to the LLM with stream=True,
+    and return an EventSourceResponse (SSE) that yields tokens. (Task 5.2)
+    """
+    import json
+
+    messages.append({"role": "user", "content": request.message})
+
+    # Let's define the generator as synchronous so EventSourceResponse correctly runs it in a threadpool
+    def sync_event_generator():
+        try:
+            stream = client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=messages,
+                stream=True,
+                stream_options={"include_usage": True}
+            )
+        except OpenAIError as exc:
+            messages.pop()
+            yield {"event": "error", "data": json.dumps({"detail": f"LLM request failed: {exc}"})}
+            return
+
+        reply = ""
+        for chunk in stream:
+            # Check if there is usage info
+            if chunk.usage:
+                token_usage["prompt_tokens"] += chunk.usage.prompt_tokens
+                token_usage["completion_tokens"] += chunk.usage.completion_tokens
+                token_usage["total_tokens"] += chunk.usage.total_tokens
+
+            # Extract token content
+            if chunk.choices and len(chunk.choices) > 0:
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    reply += delta.content
+                    yield {"event": "message", "data": json.dumps({"token": delta.content})}
+
+        # Finalize turn
+        messages.append({"role": "assistant", "content": reply})
+        # Send a final 'done' event with usage info
+        yield {"event": "done", "data": json.dumps({"usage": {
+            "prompt_tokens": token_usage["prompt_tokens"],
+            "completion_tokens": token_usage["completion_tokens"],
+            "total_tokens": token_usage["total_tokens"],
+        }})}
+
+    return EventSourceResponse(sync_event_generator())
+
 
 
 @app.get("/api/context", response_model=ContextResponse)
