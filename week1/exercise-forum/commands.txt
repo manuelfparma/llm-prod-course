@@ -1,0 +1,63 @@
+# Moodle CLI Tool Commands Reference
+
+This file documents the `moodle` CLI tool, its commands, options, and key usage tips.
+
+## Global Options
+These options are applied to the root `moodle` command (e.g., `moodle --json forum posts 1447`).
+
+- `-p, --profile TEXT`: Specifies the profile name to use.
+- `--json`: Outputs command results as raw JSON instead of formatted CLI tables. 
+  *Tip: Use this option when querying posts or discussions to view the full, untruncated content, as the standard CLI table view truncates text fields to 80 characters.*
+- `-v, --verbose`: Show verbose output.
+- `--help`: Show the usage manual.
+
+## Core Commands
+
+### Course Enrollment
+- **List Enrolled Courses:**
+  ```bash
+  moodle enrol my-courses
+  ```
+  Retrieves a list of courses you are enrolled in. Returns their IDs, short names, full names, and last access times.
+
+### Forum Commands
+All forum-related actions are subcommands of `moodle forum`.
+
+- **List Forums in a Course:**
+  ```bash
+  moodle forum list <course_id>
+  ```
+  Lists all forums inside the specified course. Returns their forum IDs, names, and types.
+
+- **List Discussions in a Forum:**
+  ```bash
+  moodle forum discussions <forum_id>
+  ```
+  Lists all thread discussions inside a given forum, showing the discussion ID, subject, author, reply count, and last post info.
+
+- **List Posts in a Discussion Thread:**
+  ```bash
+  moodle forum posts <discussion_id>
+  ```
+  Lists every post inside a discussion thread, oldest first. Shows the post ID, timestamp, author, subject, and truncated message.
+  *Note: To read the full content of the posts without truncation, run this command with the global `--json` flag:*
+  ```bash
+  moodle --json forum posts <discussion_id>
+  ```
+
+- **Post a New Discussion Thread:**
+  ```bash
+  moodle forum post --forum-id <forum_id> --subject "<subject>" --message "<message_content>"
+  ```
+  Starts a new discussion in the specified forum.
+
+- **Reply to an Existing Post:**
+  ```bash
+  moodle forum reply --post-id <post_id> --message "<message_content>" [--subject "<reply_subject>"]
+  ```
+  Replies to a specific post inside a discussion thread. The post ID can be found using the `moodle forum posts <discussion_id>` command. The `--subject` option is optional and defaults to `Re:`.
+
+## Message Formatting Tips
+- **HTML Rendering:** The Moodle API expects forum messages (`post` and `reply`) to be in HTML format by default. If you write plain text with standard newlines (`\n`), Moodle will render it on the web UI as a single continuous line (wall of text).
+- **Paragraphs and Breaks:** Always wrap paragraphs in `<p>...</p>` tags and use `<br>` for single line breaks when posting messages so that they render correctly in web browsers.
+- **CLI Shell Escaping:** When running commands from a bash terminal, be careful with unescaped backticks (`) or double quotes (") inside your messages. Either escape them (`\`` and `\"`) or wrap the string carefully in quotes so bash doesn't evaluate them as command substitutions.
