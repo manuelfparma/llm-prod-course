@@ -44,7 +44,7 @@ def _call_stream(input_llm: list):
         model=MODEL_NAME,
         input=input_llm,
         stream=True,
-        # temperature=2.0,
+        temperature=2.0,
     )
 
     reply = ""
